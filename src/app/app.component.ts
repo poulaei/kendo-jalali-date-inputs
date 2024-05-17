@@ -33,21 +33,21 @@ export class AppComponent {
         private cdr: ChangeDetectorRef,
         private ddd: KendoJalaliDateInputsModule
     ) {
-        console.log("constructor=========", localeService);
+        //console.log("constructor=========", localeService);
         this.calendarType = localeService.isJalali ? DatePickerType.jalali : DatePickerType.gregory;
         this.currentLocaleId = localeService.localeId;
     }
 
     changeCalendarType(value: string): void {
         localStorage.setItem('locale', value);
-        console.log(this.localeService);
+        //console.log(this.localeService);
         this.calendarType = value;
         this.localeService.toggleType();
         this.localeService.reload();
         // this.reload();
         // @ts-ignore
 
-        console.log(document.getElementById("sina").getElementsByTagName("input"));
+        //console.log(document.getElementById("sina").getElementsByTagName("input"));
     }
 
     private reload(): void {
