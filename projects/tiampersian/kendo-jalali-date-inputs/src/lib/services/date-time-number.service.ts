@@ -26,17 +26,20 @@ export class DateTimeNumberService {
       return;
     }
     const me = this;
-    // dayjs.localeData().months();
+     //dayjs.localeData().months();
     const te = dayjs.prototype.format;
     dayjs.prototype.format = function (format) {
 
-      if (!me.usePersianNumber) {
-        return te.call(this, format);
-      }
-
-      let result = te.call(this, format);
-      result = result.toPerNumber().replace(/,/g, '،');
-      return result;
+      return te.call(this, format);
+      // if (!me.usePersianNumber) {
+      //   //Commented by poulaei
+      //   //نمایش اعداد به شکل انگلیسی در تقویم
+      //   return te.call(this, format);
+      // }
+      //
+      // let result = te.call(this, format);
+      // result = result.toPerNumber().replace(/,/g, '،');
+      // return result;
     };
   }
 }
