@@ -73,45 +73,44 @@ DateInputComponent.prototype['handleInput'] = function () {
     let diff = [];
 
     let prevValue = this.currentValue;
-  console.log("prevValue >>>",prevValue);
     if (intl.isJalali) {
         // // TODO Check me
         prevValue = this.value ? this.intl.getDayJsValue(this.value).format(dateFormatString.call(this, this.value, this.format, 'fa').format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
            // // prevValue = this.value ? getValue.call(this, this.value).format(this.format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
-      console.log("intl.isJalali : prevValue >>>",prevValue);
     }
 
   diff = approximateStringMatching(prevValue, this.currentFormat, this.inputValue.toEnNumber(), this.caret()[0]);
 
-  console.log("diff >>>",diff);
   //Poulaei @ 1402/02/29  : از اینجا شروع کن
-  // prepareDiffInJalaliMode.call(this, intl, diff);
+    if(this.formatSections.date)
+       prepareDiffInJalaliMode.call(this, intl, diff);
     const navigationOnly = (diff.length === 1 && diff[0][1] === "_");
     let switchPart = false;
     if (!navigationOnly) {
         let parsedPart;
-
-        for (let i = 0; i < diff.length; i++) {
-            if (diff[i][2] === undefined) {
-                parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+        if(this.formatSections.date) {
+            for (let i = 0; i < diff.length; i++) {
+                if (diff[i][2] === undefined) {
+                    parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+                }
+                switchPart = diff[i][2] !== undefined ? diff[i][2] : parsedPart.switchToNext;
+                if (diff[i][3]) {
+                    this.kendoDate.value = diff[i][3];
+                }
+                if (diff[i][4]) {
+                    this.kendoDate[diff[i][4]] = false;
+                }
             }
-            switchPart = /*diff[i][2] !== undefined ? diff[i][2] :*/ parsedPart.switchToNext;
-            // if (diff[i][3]) {
-            //     this.kendoDate.value = diff[i][3];
-            // }
-            // if (diff[i][4]) {
-            //     this.kendoDate[diff[i][4]] = false;
-            // }
         }
-      // for (let i = 0; i < diff.length; i++) {
-      //   parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
-      //   switchPart = parsedPart.switchToNext;
-      // }
-      console.log("parsedPart >>> ",parsedPart);
-        const candidate = this.kendoDate.getDateObject();
-        console.log("candidate >>> ",candidate);
-        if (this.value && candidate && !this.formatSections.date) {
-            this.kendoDate = this.getKendoDate(setTime(this.value, candidate));
+        if(this.formatSections.time) {
+            for (let i = 0; i < diff.length; i++) {
+              parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+              switchPart = parsedPart.switchToNext;
+            }
+            const candidate = this.kendoDate.getDateObject();
+            if (this.value && candidate) {
+                this.kendoDate = this.getKendoDate(setTime(this.value, candidate));
+             }
         }
     }
     this.resetSegmentValue = false;
@@ -198,7 +197,8 @@ function prepareDiffInJalaliMode(intl: JalaliCldrIntlService, diff: any[]) {
             let month = d[1];
             if (existInputs.m) {
                 d[2] = true;
-                month = +(dt.month() + 1) + d[1];
+                //month = (month>1)? d[1]%12 : (+(dt.month() + 1) + d[1])%12 ;//+(dt.month() + 1) + d[1];
+                month = (month<3 && dt.month()<1)?  (+(dt.month() + 1) + d[1]) :d[1]%12  ;
                 resetExistingInputs();
             } else {
                 d[2] = +month > 1;
@@ -213,7 +213,7 @@ function prepareDiffInJalaliMode(intl: JalaliCldrIntlService, diff: any[]) {
             }
 
             this.kendoDate.value = (dt.set('month', month - 1).toDate());
-            d[1] = '' + (dt.locale('en').month() + 1);
+            d[1] = '' + (dt.locale('fa').month() + 1);
 
             return;
         }
@@ -241,7 +241,7 @@ function prepareDiffInJalaliMode(intl: JalaliCldrIntlService, diff: any[]) {
                 }
             }
             this.kendoDate.value = (dt.set('date', +day).toDate());
-            d[1] = '' + (dt.locale('en').date());
+            d[1] = '' + (dt.locale('fa').date());
             return;
         }
         if (d[0].toLocaleLowerCase() === 'y') {

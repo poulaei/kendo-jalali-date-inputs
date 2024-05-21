@@ -9,6 +9,7 @@ import {KendoInput} from "@progress/kendo-angular-common";
 import {DOCUMENT} from "@angular/common";
 import {DateInputComponent} from "@progress/kendo-angular-dateinputs";
 import {isPresent} from "../../projects/tiampersian/kendo-jalali-date-inputs/src/lib/services/kendo-util-overrides";
+import jalaliday from "jalaliday";
 
 @Component({
     selector: 'app-root',
@@ -68,5 +69,6 @@ export class AppComponent {
     }
 
     protected readonly DatePickerType = DatePickerType;
+    protected readonly jalaliday = jalaliday;
 }
 
