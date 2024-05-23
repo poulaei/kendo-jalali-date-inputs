@@ -6,433 +6,447 @@ import {cloneDate} from "@progress/kendo-date-math";
 
 
 const existInputs = {
-    'm': false,
-    'd': false,
-    'y': false
+  'm': false,
+  'd': false,
+  'y': false
 };
 // tslint:disable-next-line:no-string-literal
 const old = DateInputComponent.prototype['updateElementValue'];
 DateInputComponent.prototype['updateElementValue'] = function (isActive: boolean): void {
-  //console.log("kendo-jalali-dateinputs :: updateElementValue>>>>>>>>>>>>>>>>>>>>");
-    if (typeof window !== 'undefined' && window['useOld']) {
-        old.call(this, isActive);
-        return;
-    }
-    const start = this.caret()[0]; //XXX: get caret position before input is updated
-    const format = this.isActive ? this.inputFormat : this.displayFormat;
-    const localeId = (this.intl as JalaliCldrIntlService).localeIdByDatePickerType;
-    const showPlaceholder = !this.isActive && isPresent(this.placeholder) && !this.kendoDate.hasValue();
-    const input = this.inputElement;
-    const texts = this.kendoDate.getTextAndFormat(format);
-    // this.currentValue = !showPlaceholder ? this.intl.formatDate(this.kendoDate.value, format) : '';
-    this.currentValue = !showPlaceholder ? texts[0] : '';
-    // console.log("date-input-component :: this.value >>>>>>>>> ", this.value);
-    const temp = getDateFormatString.call(this, format, localeId);
-    this.currentFormat = temp.symbol;
-    this.outputFormat = temp.format;
-    //this.renderer.setProperty(input, 'value', this.currentValue);
-    if (this.kendoDate.hasValue()) {
-        let oldValue = cloneDate(this.value);
-        setInputValue.call(this, localeId, oldValue);
-    } else {
-        this.renderer.setProperty(input, 'value', this.currentValue);
-        this.currentFormat = texts[1];
-    }
-    if (input.placeholder !== '' + this.placeholder) {
-        this.renderer.setProperty(input, "placeholder", this.placeholder);
-    }
-    if (isActive) {
-        this.selectNearestSegment(start);
-    }
+  if (typeof window !== 'undefined' && window['useOld']) {
+    old.call(this, isActive);
+    return;
+  }
+  const start = this.caret()[0]; //XXX: get caret position before input is updated
+  const format = this.isActive ? this.inputFormat : this.displayFormat;
+  const localeId = (this.intl as JalaliCldrIntlService).localeIdByDatePickerType;
+  const showPlaceholder = !this.isActive && isPresent(this.placeholder) && !this.kendoDate.hasValue();
+  const input = this.inputElement;
+  const texts = this.kendoDate.getTextAndFormat(format);
+  // this.currentValue = !showPlaceholder ? this.intl.formatDate(this.kendoDate.value, format) : '';
+  this.currentValue = !showPlaceholder ? texts[0] : '';
+  // console.log("date-input-component :: this.value >>>>>>>>> ", this.value);
+  const temp = getDateFormatString.call(this, format, localeId);
+  this.currentFormat = temp.symbol;
+  this.outputFormat = temp.format;
+  //this.renderer.setProperty(input, 'value', this.currentValue);
+  if (this.kendoDate.hasValue()) {
+    let oldValue = cloneDate(this.value);
+    setInputValue.call(this, localeId, oldValue);
+  } else {
+    this.renderer.setProperty(input, 'value', this.currentValue);
+    this.currentFormat = texts[1];
+  }
+  if (input.placeholder !== '' + this.placeholder) {
+    this.renderer.setProperty(input, "placeholder", this.placeholder);
+  }
+  if (isActive) {
+    this.selectNearestSegment(start);
+  }
 };
 const getKendoDate = DateInputComponent.prototype['getKendoDate'];
 DateInputComponent.prototype['getKendoDate'] = function (value: Date) {
-    if (!value || Number.isNaN(value?.getDate()))
-        value = null;
+  if (!value || Number.isNaN(value?.getDate()))
+    value = null;
 
-    return getKendoDate.call(this, value);
+  return getKendoDate.call(this, value);
 }
 const oldHandleInput = DateInputComponent.prototype['handleInput'];
 DateInputComponent.prototype['handleInput'] = function () {
-    const intl = (this.intl as JalaliCldrIntlService);
+  const intl = (this.intl as JalaliCldrIntlService);
 
-    if (window['useOld']) {
-        oldHandleInput.call(this);
-        return;
-    }
-    const me: DateInputComponent = this;
+  if (window['useOld']) {
+    oldHandleInput.call(this);
+    return;
+  }
+  const me: DateInputComponent = this;
 
-    if (me.disabled || me.readonly) {
-        return;
-    }
-    if (this.paste) {
-        this.updateOnPaste();
-        this.paste = false;
-        return;
-    }
-    let diff = [];
+  if (me.disabled || me.readonly) {
+    return;
+  }
+  if (this.paste) {
+    this.updateOnPaste();
+    this.paste = false;
+    return;
+  }
+  let diff = [];
 
-    let prevValue = this.currentValue;
-    if (intl.isJalali) {
-        // // TODO Check me
-        prevValue = this.value ? this.intl.getDayJsValue(this.value).format(dateFormatString.call(this, this.value, this.format, 'fa').format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
-           // // prevValue = this.value ? getValue.call(this, this.value).format(this.format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
-    }
+  let prevValue = this.currentValue;
+  if (intl.isJalali) {
+     // TODO Check me
+    prevValue = this.value ? this.intl.getDayJsValue(this.value).format(dateFormatString.call(this, this.value, this.format, 'fa').format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
+     // prevValue = this.value ? getValue.call(this, this.value).format(this.format.toMomentDateTimeFormat()).toEnNumber() : this.currentValue;
+  }
 
   diff = approximateStringMatching(prevValue, this.currentFormat, this.inputValue.toEnNumber(), this.caret()[0]);
 
-  //Poulaei @ 1402/02/29  : از اینجا شروع کن
-    if(this.formatSections.date)
-       prepareDiffInJalaliMode.call(this, intl, diff);
-    const navigationOnly = (diff.length === 1 && diff[0][1] === "_");
-    let switchPart = false;
-    if (!navigationOnly) {
-        let parsedPart;
-        if(this.formatSections.date) {
-            for (let i = 0; i < diff.length; i++) {
-                if (diff[i][2] === undefined) {
-                    parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
-                }
-                switchPart = diff[i][2] !== undefined ? diff[i][2] : parsedPart.switchToNext;
-                if (diff[i][3]) {
-                    this.kendoDate.value = diff[i][3];
-                }
-                if (diff[i][4]) {
-                    this.kendoDate[diff[i][4]] = false;
-                }
-            }
+  if (this.formatSections.date)
+    prepareDiffInJalaliMode.call(this, intl, diff);
+  const navigationOnly = (diff.length === 1 && diff[0][1] === "_");
+  let switchPart = false;
+  if (!navigationOnly) {
+    let parsedPart;
+    if (this.formatSections.date) {
+      for (let i = 0; i < diff.length; i++) {
+        if (diff[i][2] === undefined) {
+          parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
         }
-        if(this.formatSections.time) {
-            for (let i = 0; i < diff.length; i++) {
-              parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
-              switchPart = parsedPart.switchToNext;
-            }
-            const candidate = this.kendoDate.getDateObject();
-            if (this.value && candidate) {
-                this.kendoDate = this.getKendoDate(setTime(this.value, candidate));
-             }
-        }
+        switchPart = diff[i][2] !== undefined ? diff[i][2] : parsedPart.switchToNext;
+        // if (diff[i][3]) {
+        //   this.kendoDate.value = diff[i][3];
+        // }
+        // if (diff[i][4]) {
+        //   this.kendoDate[diff[i][4]] = false;
+        // }
+      }
     }
-    this.resetSegmentValue = false;
-    this.putDateInRange();
-    this.updateElementValue(this.isActive);
+    if (this.formatSections.time) {
+      for (let i = 0; i < diff.length; i++) {
+        if(diff[i][1]=='')
+             diff[i][1]="0";
+        parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+        switchPart = parsedPart.switchToNext;
+      }
+      const candidate = this.kendoDate.getDateObject();
+      if (this.value && candidate) {
+        this.kendoDate = this.getKendoDate(setTime(this.value, candidate));
+      }
+      else
+      {
+        let tempDate = cloneDate(this.value);
+        let candidate = this.intl.getDayJsValue(tempDate).set("hour",0).set("minute",0).set("second", 0).set("millisecond",0);
+        this.kendoDate = this.getKendoDate(setTime(this.value, candidate.toDate()));
+      }
+    }
+  }
+  this.resetSegmentValue = false;
+  this.putDateInRange();
+  this.updateElementValue(this.isActive);
 
-    this.triggerChange();
-    this.updateIncompleteValidationStatus();
-    if (diff.length && diff[0][0] !== "_") {
-        this.selectDateSegment(diff[0][0]);
-    }
-    if (switchPart || navigationOnly) {
-        this.switchDateSegment(1);
-    }
-    if (this.backspace) {
-        this.switchDateSegment(-1);
-    }
-    this.backspace = false;
-    // if (intl.isLocaleIran) {
-    //   me.inputElement.value = (me.inputElement.value as string).toPerNumber();
-    // }
-    //added by poulaei
-    //نمایش اعداد به شکل فارسی در تکست باکس تاریخ
-    //me.inputElement.value = (me.inputElement.value as string).toPerNumber();
+  this.triggerChange();
+  this.updateIncompleteValidationStatus();
+  if (diff.length && diff[0][0] !== "_") {
+    this.selectDateSegment(diff[0][0]);
+  }
+  if (switchPart || navigationOnly) {
+    this.switchDateSegment(1);
+  }
+  if (this.backspace) {
+    this.switchDateSegment(-1);
+  }
+  this.backspace = false;
+  // if (intl.isLocaleIran) {
+  //   me.inputElement.value = (me.inputElement.value as string).toPerNumber();
+  // }
+  //added by poulaei
+  //نمایش اعداد به شکل فارسی در تکست باکس تاریخ
+  //me.inputElement.value = (me.inputElement.value as string).toPerNumber();
 };
 
 function dateFormatString(date, format): { format: string, symbol: string } {
-    const dateFormatParts = this.kendoDate.intl.splitDateFormat(format);
-    const parts = [];
-    const partMap = [];
-    const partSymbols = [];
-    for (let i = 0; i < dateFormatParts.length; i++) {
-        let partLength = this.intl.getDayJsValue(date)?.format(dateFormatParts[i].pattern?.toMomentDateTimeFormat()).length || 0;
-        // let partLength = dayjs(date)?.format(dateFormatParts[i].pattern?.toMomentDateTimeFormat()).length || 0;
-        while (partLength > 0) {
-            parts.push(this.kendoDate.symbols[dateFormatParts[i].pattern[0]] || dateFormatParts[i].pattern[0] || "_");
-            partSymbols.push(this.kendoDate.symbols[dateFormatParts[i].pattern[0]] || "_");
-            partMap.push(dateFormatParts[i]);
-            partLength--;
-        }
+  const dateFormatParts = this.kendoDate.intl.splitDateFormat(format);
+  const parts = [];
+  const partMap = [];
+  const partSymbols = [];
+  for (let i = 0; i < dateFormatParts.length; i++) {
+    let partLength = this.intl.getDayJsValue(date)?.format(dateFormatParts[i].pattern?.toMomentDateTimeFormat()).length || 0;
+    // let partLength = dayjs(date)?.format(dateFormatParts[i].pattern?.toMomentDateTimeFormat()).length || 0;
+    while (partLength > 0) {
+      parts.push(this.kendoDate.symbols[dateFormatParts[i].pattern[0]] || dateFormatParts[i].pattern[0] || "_");
+      partSymbols.push(this.kendoDate.symbols[dateFormatParts[i].pattern[0]] || "_");
+      partMap.push(dateFormatParts[i]);
+      partLength--;
     }
-    return {format: parts.join(""), symbol: partSymbols.join("")};
+  }
+  return {format: parts.join(""), symbol: partSymbols.join("")};
 }
 
 const oldHandleBlur = DateInputComponent.prototype['handleBlur'];
 DateInputComponent.prototype['handleBlur'] = function (event) {
-    resetExistingInputs();
-    oldHandleBlur.call(this, event);
+  resetExistingInputs();
+  oldHandleBlur.call(this, event);
 };
 
 function prepareDiffInJalaliMode(intl: JalaliCldrIntlService, diff: any[]) {
-    if (intl.localeIdByDatePickerType !== 'fa') {
+  if (intl.localeIdByDatePickerType !== 'fa') {
+    return;
+  }
+  if (!this.inputValue || !this.kendoDate.hasValue()) {
+    this.kendoDate.date = false;
+    this.kendoDate.year = false;
+    this.kendoDate.month = false;
+    this.kendoDate = this.getKendoDate((MIN_JALALI_DATE.clone().toDate()));
+  }
+  //if (!this.inputValue) {
+   // return;
+  //}
+  const dt = this.intl.getDayJsValue(this.kendoDate.value, 'fa');
+  if (!dt) {
+    return;
+  }
+  // if (debuggerCounter(3)) { }
+
+  diff.forEach((d): void => {
+    if (!d[0]) {
+      return;
+    }
+
+    d[2] = false;
+    if ((d[0] as string).toLocaleLowerCase() === 'm') {
+
+      this.kendoDate.month = d[1] != '';
+      if (d[1] === '') {
+        existInputs.m = false;
+        this.kendoDate = this.getKendoDate(dt.month((+d[1])).toDate());
         return;
+      }
+      let month = d[1];
+      if (existInputs.m) {
+        d[2] = true;
+        //month = (month>1)? d[1]%12 : (+(dt.month() + 1) + d[1])%12 ;//+(dt.month() + 1) + d[1];
+        month = (month < 3 && dt.month() < 1) ? (+(dt.month() + 1) + d[1]) : d[1] % 12;
+        resetExistingInputs();
+      } else {
+        d[2] = +month > 1;
+        existInputs.m = true;
+        if (month === '0') {
+          existInputs.m = false;
+          //this.kendoDate.month = false;
+          // this.kendoDate.value = dt.set('date', 1).toDate();
+          d[1] = '0'
+          return;
+        }
+      }
+
+      this.kendoDate.value = (dt.set('month', month - 1).toDate());
+      d[1] = '' + (dt.locale('fa').month() + 1);
+
+      return;
     }
-    if (!this.inputValue || !this.kendoDate.hasValue()) {
-        this.kendoDate.date = false;
-        this.kendoDate.year = false;
-        this.kendoDate.month = false;
-        this.kendoDate = this.getKendoDate((MIN_JALALI_DATE.clone().toDate()));
-    }
-    if (!this.inputValue) {
+    if ((d[0] as string).toLocaleLowerCase() === 'd') {
+      if (d[1] === '') {
+        existInputs.d = false;
+        this.kendoDate = this.getKendoDate(dt.date((+d[1])).toDate());
         return;
+      }
+      this.kendoDate.date = true;
+      let day = d[1];
+      if (existInputs.d) {
+        d[2] = true;
+        day = +(dt.date()) + d[1];
+        resetExistingInputs();
+      } else {
+        d[2] = +day > 3;
+        existInputs.d = true;
+        if (day === '0') {
+          existInputs.d = false;
+          //this.kendoDate.date = false;
+          //this.kendoDate.value = dt.set('date', 0).toDate();
+          d[1] = '0'
+          return;
+        }
+      }
+      this.kendoDate.value = (dt.set('date', +day).toDate());
+      d[1] = '' + (dt.locale('fa').date());
+      return;
     }
-    const dt = this.intl.getDayJsValue(this.kendoDate.value, 'fa');
-    if (!dt) {
-        return;
+    if ((d[0] as string).toLocaleLowerCase() === 'y') {
+      //d[1] = prepareYearValue.call(this, d, dt);
+      if (d[1] === '') {
+        existInputs.y = false;
+        //this.kendoDate = this.getKendoDate(dt.year((+d[1])).toDate());
+        this.kendoDate = this.getKendoDate(dt.year(1).toDate());
+        return ;
+      }
+      this.kendoDate.year = true;
+      let year = d[1];
+      if (existInputs.y) {
+        year = +(dt.year()) + d[1];
+        if (+year.length > 3) {
+          d[2] = true;
+          resetExistingInputs();
+        }
+      } else {
+        d[2] = +year.length > 3;
+        existInputs.y = true;
+        if (year === '0') {
+          //existInputs.y = false;
+          //this.kendoDate.date = false;
+          this.kendoDate.value = dt.set('year', 1).toDate();
+          d[1] = '1'
+          return ;
+        }
+      }
+      this.kendoDate.value = (dt.set('year', +year).toDate());
+      d[1] = '' + (dt.locale('fa').year());
+      return;
     }
-    // if (debuggerCounter(3)) { }
-
-    diff.forEach((d): void => {
-        if (!d[0]) {
-            return;
-        }
-
-        d[2] = false;
-        if ((d[0] as string).toLocaleLowerCase() === 'm') {
-
-            this.kendoDate.month = d[1] != '';
-            if (d[1] === '') {
-                existInputs.m = false;
-                this.kendoDate = this.getKendoDate(dt.month((+d[1])).toDate());
-                return;
-            }
-            let month = d[1];
-            if (existInputs.m) {
-                d[2] = true;
-                //month = (month>1)? d[1]%12 : (+(dt.month() + 1) + d[1])%12 ;//+(dt.month() + 1) + d[1];
-                month = (month<3 && dt.month()<1)?  (+(dt.month() + 1) + d[1]) :d[1]%12  ;
-                resetExistingInputs();
-            } else {
-                d[2] = +month > 1;
-                existInputs.m = true;
-                if (month === '0') {
-                    existInputs.m = false;
-                    this.kendoDate.month = false;
-                    // this.kendoDate.value = dt.set('date', 1).toDate();
-                    d[1] = '0'
-                    return;
-                }
-            }
-
-            this.kendoDate.value = (dt.set('month', month - 1).toDate());
-            d[1] = '' + (dt.locale('fa').month() + 1);
-
-            return;
-        }
-        if ((d[0] as string).toLocaleLowerCase() === 'd') {
-            if (d[1] === '') {
-                existInputs.d = false;
-                this.kendoDate = this.getKendoDate(dt.date((+d[1])).toDate());
-                return;
-            }
-            this.kendoDate.date = true;
-            let day = d[1];
-            if (existInputs.d) {
-                d[2] = true;
-                day = +(dt.date()) + d[1];
-                resetExistingInputs();
-            } else {
-                d[2] = +day > 3;
-                existInputs.d = true;
-                if (day === '0') {
-                    existInputs.d = false;
-                    this.kendoDate.date = false;
-                    // this.kendoDate.value = dt.set('date', 1).toDate();
-                    d[1] = '0'
-                    return;
-                }
-            }
-            this.kendoDate.value = (dt.set('date', +day).toDate());
-            d[1] = '' + (dt.locale('fa').date());
-            return;
-        }
-        if (d[0].toLocaleLowerCase() === 'y') {
-            d[1] = prepareYearValue.call(this, d, dt);
-        }
-    });
+  });
 }
 
 const MIN_JALALI_DATE = dayjs('0000-01-01', 'YYYY/MM/DD', 'fa');
 
 function prepareYearValue(diff: any[], dt) {
-    diff[2] = false
-    this.kendoDate.year = false;
-    ;
-    const year = diff[1];
-    if (year === '') {
-        existInputs.y = false;
-        this.kendoDate = this.getKendoDate(dt.year((+year)).toDate());
-        return '';
-    }
-    this.kendoDate.year = true;
-    // if (!existInputs.y && year === '0') {
-    //   existInputs.y = false;
-    //   this.kendoDate.year = false;
-    //   return;
-    // }
-    if (!existInputs.y || dt.format('y').length > 3) {
-        existInputs.y = true;
-        this.kendoDate = this.getKendoDate(dt.year((+year)).toDate());
-        return year === '' ? '' : dt.format('y');
-    }
-
+  diff[2] = false
+  this.kendoDate.year = false;
+  ;
+  const year = diff[1];
+  if (year === '') {
+    existInputs.y = false;
+    this.kendoDate = this.getKendoDate(dt.year((+year)).toDate());
+    return '';
+  }
+  this.kendoDate.year = true;
+  // if (!existInputs.y && year === '0') {
+  //   existInputs.y = false;
+  //   this.kendoDate.year = false;
+  //   return;
+  // }
+  //dt.format('YYYY').toMomentDateTimeFormat()>3 ????????????
+  if (!existInputs.y || dt.format('YYYY').length > 3) {
+    existInputs.y = true;
+    this.kendoDate = this.getKendoDate(dt.year((+year)).toDate());
+    return year === '' ? '' : dt.format('YYYY');
+  } else
     this.kendoDate.value = dt.year(+(dt.year() + year)).toDate();
 
-    if (dt.format('y').length > 3) {
-        resetExistingInputs();
-        diff[2] = true;
-    }
-    return dt.format('y');
+  if (dt.format('YYYY').length > 3) {
+    resetExistingInputs();
+    diff[2] = true;
+  }
+  return dt.format('YYYY');
 }
 
 export function getDateFormatString(format: string, localeId: string, value?: Date): string {
-    const dt = this.intl.getDayJsValue(value || this.kendoDate.value, localeId)?.toDate();
-    return dateFormatString.call(this, dt, format, localeId) || '';
+  const dt = this.intl.getDayJsValue(value || this.kendoDate.value, localeId)?.toDate();
+  return dateFormatString.call(this, dt, format, localeId) || '';
 };
 
 export const approximateStringMatching = (oldTextOrigin, oldFormat, newTextOrigin, caret) => {
-    // Remove the right part of the cursor.
-    //oldFormat = oldFormat.substring(0, caret + oldText.length - newText.length);
-    const oldIndex = caret + oldTextOrigin.length - newTextOrigin.length;
-    const oldTextSeparator = oldTextOrigin[oldIndex];
-    const oldText = oldTextOrigin.substring(0, caret + oldTextOrigin.length - newTextOrigin.length);
-    const newText = newTextOrigin.substring(0, caret);
-    const diff = [];
-    // Handle typing a single character over the same selection.
-    if (oldText === newText && caret > 0) {
-        diff.push([oldFormat[caret - 1], newText[caret - 1]]);
-        return diff;
+  // Remove the right part of the cursor.
+  //oldFormat = oldFormat.substring(0, caret + oldText.length - newText.length);
+  const oldIndex = caret + oldTextOrigin.length - newTextOrigin.length;
+  const oldTextSeparator = oldTextOrigin[oldIndex];
+  const oldText = oldTextOrigin.substring(0, caret + oldTextOrigin.length - newTextOrigin.length);
+  const newText = newTextOrigin.substring(0, caret);
+  const diff = [];
+  // Handle typing a single character over the same selection.
+  if (oldText === newText && caret > 0) {
+    diff.push([oldFormat[caret - 1], newText[caret - 1]]);
+    return diff;
+  }
+  if (oldText.indexOf(newText) === 0 && (newText.length === 0 || oldFormat[newText.length - 1] !== oldFormat[newText.length])) {
+    // Handle Delete/Backspace.
+    let deletedSymbol = "";
+    //XXX:
+    // Whole text is replaced with a same char
+    // Nasty patch required to keep the selection in the first segment
+    if (newText.length === 1) {
+      diff.push([oldFormat[0], newText[0]]);
     }
-    if (oldText.indexOf(newText) === 0 && (newText.length === 0 || oldFormat[newText.length - 1] !== oldFormat[newText.length])) {
-        // Handle Delete/Backspace.
-        let deletedSymbol = "";
-        //XXX:
-        // Whole text is replaced with a same char
-        // Nasty patch required to keep the selection in the first segment
-        if (newText.length === 1) {
-            diff.push([oldFormat[0], newText[0]]);
-        }
-        for (let i = newText.length; i < oldText.length; i++) {
-            if (oldFormat[i] !== deletedSymbol && oldFormat[i] !== "_") {
-                deletedSymbol = oldFormat[i];
-                diff.push([deletedSymbol, ""]);
-            }
-        }
-        return diff;
+    for (let i = newText.length; i < oldText.length; i++) {
+      if (oldFormat[i] !== deletedSymbol && oldFormat[i] !== "_") {
+        deletedSymbol = oldFormat[i];
+        diff.push([deletedSymbol, ""]);
+      }
     }
-    // Handle inserting text (the new text is longer than the previous one).
-    // Handle typing over a literal as well.
-    if (newText.indexOf(oldText) === 0 || oldFormat[caret - 1] === "_") {
-        let symbol = oldFormat[0];
-        for (let i = Math.max(0, oldText.length - 1); i < oldFormat.length; i++) {
-            if (oldFormat[i] !== "_") {
-                symbol = oldFormat[i];
-                break;
-            }
-        }
-        return [[symbol, newText[caret - 1]]];
+    return diff;
+  }
+  // Handle inserting text (the new text is longer than the previous one).
+  // Handle typing over a literal as well.
+  if (newText.indexOf(oldText) === 0 || oldFormat[caret - 1] === "_") {
+    let symbol = oldFormat[0];
+    for (let i = Math.max(0, oldText.length - 1); i < oldFormat.length; i++) {
+      if (oldFormat[i] !== "_") {
+        symbol = oldFormat[i];
+        break;
+      }
     }
-    // Handle entering a space or a separator, for navigation to the next item.
-    if (newText[newText.length - 1] === " " || (newText[newText.length - 1] === oldTextSeparator && oldFormat[oldIndex] === '_')) {
-        return [[oldFormat[caret - 1], "_"]];
-    }
-    // Handle typing over a correctly selected part.
-    return [[oldFormat[caret - 1], newText[caret - 1]]];
+    return [[symbol, newText[caret - 1]]];
+  }
+  // Handle entering a space or a separator, for navigation to the next item.
+  if (newText[newText.length - 1] === " " || (newText[newText.length - 1] === oldTextSeparator && oldFormat[oldIndex] === '_')) {
+    return [[oldFormat[caret - 1], "_"]];
+  }
+  // Handle typing over a correctly selected part.
+  return [[oldFormat[caret - 1], newText[caret - 1]]];
 };
 
 export const setTime = (origin, candidate) => {
-    const date = cloneDate(origin);//new Date(origin);
-    date.setHours(candidate.getHours(), candidate.getMinutes(), candidate.getSeconds(), candidate.getMilliseconds());
-    return date;
+  const date = cloneDate(origin);//new Date(origin);
+  date.setHours(candidate.getHours(), candidate.getMinutes(), candidate.getSeconds(), candidate.getMilliseconds());
+  return date;
 };
 
 //Poulaei @ 1402/02/26 For Arrow Key Problem in Jalali
 function setInputValue(localeId: string, oldValue: Date) {
-    // console.log("date-input-component :: setInputValue::oldValue >>>>>>>>> ", oldValue);
-    const value: Date = cloneDate(this.kendoDate.value);//this.kendoDate.value;
-    let format = this.format;
-    if (['d', 't', 'g'].some(x => x == format)) {
-        format = (this.outputFormat || this.currentFormat).toMomentDateTimeFormat();
+  // console.log("date-input-component :: setInputValue::oldValue >>>>>>>>> ", oldValue);
+  const value: Date = cloneDate(this.kendoDate.value);//this.kendoDate.value;
+  let format = this.format;
+  if (['d', 't', 'g'].some(x => x == format)) {
+    format = (this.outputFormat || this.currentFormat).toMomentDateTimeFormat();
+  }
+  if (!this.kendoDate.year) {
+    format = format.replace(/y/gi, '0');
+  }
+  if (!this.kendoDate.date) {
+    format = format.replace(/d/gi, '0');
+  }
+  if (!this.kendoDate.month) {
+    format = format.replace(/m/gi, '0');
+  }
+
+  const result = this.intl.getDayJsValue(value, localeId);
+
+  let temp = (this.intl as JalaliCldrIntlService).calendarType;
+  if (this.intl.calendarType == 'jalali') {
+
+    let oldDate = this.intl.getDayJsValue(oldValue, localeId);
+    let oldMonth = oldDate.month();
+    let oldDay = oldDate.date();
+    let oldYear = oldDate.year();
+    let newDate = this.intl.getDayJsValue(value, localeId);
+    let newMonth = newDate.month();
+    let newDay = newDate.date();
+    let newYear = newDate.year();
+
+    const temp = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).date();
+    const endOfMonth = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).endOf('month').date();
+    const startOfMonth = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).startOf('month').date();
+
+    if (oldMonth != newMonth && newDay != endOfMonth && newDay != startOfMonth) {
+      let result1 = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date());
+      this.kendoDate.value = result1.toDate();
+
+      this.renderer.setProperty(this.inputElement, 'value', result1.format(format.toMomentDateTimeFormat()));
+    } else {
+      this.renderer.setProperty(this.inputElement, 'value', newDate.format(format.toMomentDateTimeFormat()));
     }
-    if (!this.kendoDate.year) {
-        format = format.replace(/y/gi, '0');
-    }
-    if (!this.kendoDate.date) {
-        format = format.replace(/d/gi, '0');
-    }
-    if (!this.kendoDate.month) {
-        format = format.replace(/m/gi, '0');
-    }
-
-    const result = this.intl.getDayJsValue(value, localeId);
-
-    //console.log("date-input.component - this.intl.getDayJsValue  - result [BEFORE SET]: >>>>> ",result.date());
-    // result.set("month",10);
-    //console.log("date-input.component - this.intl.getDayJsValue  - result[AFTER SET]: >>>>> ",result);
-    let temp = (this.intl as JalaliCldrIntlService).calendarType;
-    // console.log("calendarType", temp)
-    if (this.intl.calendarType == 'jalali') {
-
-       // console.log('old->>>>>>', this.intl.getDayJsValue(oldValue, localeId).format('YYYY/MM/DD'));
-        //console.log('new->>>>>>', this.intl.getDayJsValue(value, localeId).format('YYYY/MM/DD'));
-        // console.log("value >>>>", value);
-        let oldDate = this.intl.getDayJsValue(oldValue, localeId);
-        let oldMonth = oldDate.month();
-        let oldDay = oldDate.date();
-        let oldYear = oldDate.year();
-        let newDate = this.intl.getDayJsValue(value, localeId);
-        let newMonth = newDate.month();
-        let newDay = newDate.date();
-        let newYear = newDate.year();
-        // console.log("oldJalaliDate >>>", oldJalaliDate);
-
-        const temp = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).date();
-        const endOfMonth = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).endOf('month').date();
-        const startOfMonth = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date()).startOf('month').date();
-       // console.log(endOfMonth, ':', newDay);
-
-           /* if (oldYear != newYear && newDay != endOfMonth && newDay != startOfMonth) {
-                console.log(oldYear, newYear, 'oldYear != newYear');
-                const result1 = this.intl.getDayJsValue(value, localeId).set("month", oldDate.month()).set("date", oldDate.date());
-                this.kendoDate.value = result1.toDate();
-                console.log("result1.date()>>>>>", result1.toDate())
-                this.renderer.setProperty(this.inputElement, 'value', result1.format(format.toMomentDateTimeFormat()));
-            } else */if (oldMonth != newMonth && newDay != endOfMonth && newDay != startOfMonth) {
-                //console.log(oldMonth, newMonth, 'oldYear != newYear');
-                const result1 = this.intl.getDayJsValue(value, localeId).set("d", oldDate.date());
-                this.kendoDate.value = result1.toDate();
-                console.log("result1.date()>>>>>", result1.toDate())
-                 console.log("this.kendoDate.getDateObject()>>>>>",this.kendoDate.getDateObject())
-
-                this.renderer.setProperty(this.inputElement, 'value', result1.format(format.toMomentDateTimeFormat()));
-            } else {
-                this.renderer.setProperty(this.inputElement, 'value', newDate.format(format.toMomentDateTimeFormat()));
-            }
-             //console.log("setInputValue :Jalali >>>",result.format(format.toMomentDateTimeFormat()));
-      return;
-        }
-          //console.log("setInputValue :Jalali >>>>",result.format(format.toMomentDateTimeFormat()));
-        this.renderer.setProperty(this.inputElement, 'value', result.format(format.toMomentDateTimeFormat()));
-          this.kendoDate.value = result.toDate();
+    return;
+  }
+  this.renderer.setProperty(this.inputElement, 'value', result.format(format.toMomentDateTimeFormat()));
+  this.kendoDate.value = result.toDate();
 
 }
 
 
 function resetExistingInputs() {
-    existInputs.m = false;
-    existInputs.d = false;
-    existInputs.y = false;
+  existInputs.m = false;
+  existInputs.d = false;
+  existInputs.y = false;
 }
 
 function debuggerCounter(counter): any {
-    if (typeof window === undefined) {
-        return;
-    }
-    if (typeof window['counter'] === undefined) {
-        window['counter'] = 0;
-    }
-    const result = window['counter'] === counter;
-    window['counter']++;
-    if (result) {
-        window['counter'] = 0;
-    }
-    return result;
+  if (typeof window === undefined) {
+    return;
+  }
+  if (typeof window['counter'] === undefined) {
+    window['counter'] = 0;
+  }
+  const result = window['counter'] === counter;
+  window['counter']++;
+  if (result) {
+    window['counter'] = 0;
+  }
+  return result;
 }
