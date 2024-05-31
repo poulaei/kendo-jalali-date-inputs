@@ -75,7 +75,8 @@ DateInputComponent.prototype['handleKeydown'] = function (event) {
 const oldHandleInput = DateInputComponent.prototype['handleInput'];
 DateInputComponent.prototype['handleInput'] = function (event) {
     console.log("this.inputElement >>>>>>>>>>>>>>>>>>>",this.inputElement.value)
-    event.preventDefault();
+  this.inputElement.value=this.inputElement.value.replace(" ","").trim();
+  event.preventDefault();
     const intl = (this.intl as JalaliCldrIntlService);
 
     if (window['useOld']) {
@@ -347,9 +348,10 @@ export const approximateStringMatching = (oldTextOrigin, oldFormat, newTextOrigi
    //poolaei @ 1403/03/09 : برای کنترل مقدار ورودی از اینجا شروع کن
     // Remove the right part of the cursor.
     //oldFormat = oldFormat.substring(0, caret + oldText.length - newText.length);
+  newTextOrigin =newTextOrigin.trim();
     const oldIndex = caret + oldTextOrigin.length - newTextOrigin.length;
     const oldTextSeparator = oldTextOrigin[oldIndex];
-    const oldText = oldTextOrigin.substring(0, caret + oldTextOrigin.length - newTextOrigin.length);
+    const oldText = oldTextOrigin.substring(0, oldIndex);
     const newText = newTextOrigin.substring(0, caret);
     const diff = [];
     // Handle typing a single character over the same selection.
