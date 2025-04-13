@@ -6,6 +6,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RTL } from '@progress/kendo-angular-l10n';
 import { KendoJalaliDateInputsModule } from '@tiampersian/kendo-jalali-date-inputs';
 import { AppComponent } from './app.component';
+import {ButtonModule} from "@progress/kendo-angular-buttons";
 
 
 
@@ -13,12 +14,13 @@ import { AppComponent } from './app.component';
   declarations: [
     AppComponent
   ],
-  imports: [
-    BrowserAnimationsModule,
-    BrowserModule,
-    FormsModule,
-    KendoJalaliDateInputsModule
-  ],
+    imports: [
+        BrowserAnimationsModule,
+        BrowserModule,
+        FormsModule,
+        KendoJalaliDateInputsModule,
+        ButtonModule
+    ],
   providers: [
     { provide: LOCALE_ID, useFactory: originalLocaleIdFactory },
     { provide: RTL, useFactory: isRtl, deps: [] },

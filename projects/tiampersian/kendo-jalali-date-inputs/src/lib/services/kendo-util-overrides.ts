@@ -73,6 +73,7 @@ const getCalendarType = (localeId: string) => {
   return (localeId === 'fa' || localeId === 'fa-IR') ? 'jalali' : 'gregory';
 }
 export const getDayJsValue = (dt: any, localeId: string) => {
+  //console.log(getCalendarType(localeId));
   return dayjs(dt).calendar(getCalendarType(localeId))
 }
 

@@ -418,6 +418,8 @@
     <div style="flex:1;">
         <br/>
         <p><strong>Final Value</strong>: {{value}}</p>
+        <br/>
+        <p><strong>Calendar Type :</strong>: {{calendarType}}</p> <p><strong>Local Id:</strong>: {{currentLocaleId}}</p>
     </div>
     <div class="card-container"
          [dir]="(currentLocaleId=='fa-IR'||currentLocaleId=='fa')?'rtl':'ltr'"
@@ -427,7 +429,7 @@
              style="min-height: 450px;display: flex;">
             <div class="col-xs-12 col-md-6 example-col">
                 <p>DateInput</p>
-                <kendo-datepicker [(value)]="value" id="sina" [format]="'yyyy/MM/dd'"></kendo-datepicker>
+                <kendo-datepicker [(value)]="value"  #dp  [format]="'yyyy/MM/dd'"></kendo-datepicker>
                 <p>(use <code>←</code> and <code>→</code> to navigate, <code>↑</code> and <code>↓</code> to update)</p>
               <p>TimePicker</p>
               <kendo-timepicker [(value)]="value" [format]="'HH:mm:ss.SSS'" ></kendo-timepicker>
@@ -435,7 +437,12 @@
                 decrement the value)</p>
             </div>
         </div>
+
+
     </div>
+    <div class="card-container">
+        <button kendoButton (click)="setToNull()">Set date to null</button>
+         </div  >
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
     <!-- * * * * * * * * * * * The content above * * * * * * * * * * * -->
     <!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->

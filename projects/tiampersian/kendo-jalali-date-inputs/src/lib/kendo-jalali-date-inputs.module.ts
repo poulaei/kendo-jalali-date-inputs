@@ -491,6 +491,11 @@ setData({
         short: "ثانیه",
         narrow: "ثانیه"
       },
+      millisecond: {
+        wide: "میلی ثانیه",
+        short: "میلی ثانیه",
+        narrow: "میلی ثانیه",
+      },
       zone: {
         wide: "منطقهٔ زمانی",
         short: "منطقهٔ زمانی",
