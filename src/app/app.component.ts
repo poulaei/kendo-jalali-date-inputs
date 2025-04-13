@@ -22,7 +22,7 @@ export class AppComponent {
 
     @ViewChild('date', {static: true}) ktAsideScroll: any;
     title = 'kendo-jalali-date-inputs';
-    public value: Date = new Date();
+    public value: Date = null;
     rerender = true;
     locales = ['fa-IR', 'fa', 'en-US', 'en'];
     calendarTypes = Object.values(DatePickerType);

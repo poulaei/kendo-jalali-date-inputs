@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import localeData from 'dayjs/plugin/localeData';
 import jalaliday from 'jalaliday';
+import jalaliday2 from 'jalali-plugin-dayjs';
 import { KendoJalaliHeaderTitleTemplateComponent } from './components/kendo-jalali-header-title-template/kendo-jalali-header-title-template.component';
 import { KendoDatePickerDirective } from './components/navigation.directive';
 import { IConfig } from './models/config.model';
@@ -15,6 +16,7 @@ import { JalaliCldrIntlService } from './services/jalali-cldr-intl.service';
 import './utils/string-prototypes';
 
 dayjs.extend(jalaliday);
+//dayjs.extend(jalaliday2);
 dayjs.extend(isBetween);
 dayjs.extend(localeData);
 if (typeof window !== 'undefined') {
