@@ -36,11 +36,16 @@ DateInputComponent.prototype['handleKeydown'] = function (event) {
             this.valueChange.emit(null); // ← مهم برای reactive forms
             if(this.formatSections.date)
             {
-                if (this.intl.calendarType == 'jalali')
-                    this.renderer.setProperty(this.inputElement, 'value', "سال/ماه/روز");
-                else {
-                    this.renderer.setProperty(this.inputElement, 'value', "year/month/day");
-                }
+                // if (this.intl.calendarType == 'jalali')
+                //     this.renderer.setProperty(this.inputElement, 'value', "سال/ماه/روز");
+                //     //this.renderer.setProperty(this.inputElement, 'value', "روز/ماه/سال");
+                // else {
+                //     this.renderer.setProperty(this.inputElement, 'value', "year/month/day");
+                // }
+            }
+            else if(this.formatSections.time)
+            {
+                   // this.renderer.setProperty(this.inputElement, 'value', "00:00:00");
             }
             this.notify();
             return; // دیگر به handler اصلی نرو
@@ -94,6 +99,8 @@ DateInputComponent.prototype['handleInput'] = function (event) {
     diff = approximateStringMatching(prevValue, this.currentFormat, this.inputValue.toEnNumber(), this.caret()[0]);
     if (this.formatSections.date)
         prepareDiffInJalaliMode.call(this, intl, diff);
+      else if (this.formatSections.time)
+          prepareDiffInJalaliModeForTime.call(this, intl, diff);
     const navigationOnly = (diff.length === 1 && diff[0][1] === "_");
     let switchPart = false;
     if (this.kendoDate.value && !navigationOnly) {
@@ -114,18 +121,34 @@ DateInputComponent.prototype['handleInput'] = function (event) {
         }
         if (this.formatSections.time) {
             for (let i = 0; i < diff.length; i++) {
-                if (diff[i][1] == '')
-                    diff[i][1] = "0";
-                parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
-                switchPart = parsedPart.switchToNext;
+                if (diff[i][1] == '')  diff[i][1] = "0";
+                if (diff[i][2] === undefined) {
+                    parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+                }
+                //parsedPart = this.kendoDate.parsePart(diff[i][0], diff[i][1], this.resetSegmentValue);
+                //switchPart = parsedPart.switchToNext;
+                switchPart = diff[i][2] !== undefined ? diff[i][2] : parsedPart.switchToNext;
             }
             const candidate = this.kendoDate.getDateObject();
             if (this.value && candidate) {
                 this.kendoDate = this.getKendoDate(setTime(this.value, candidate));
             } else {
-                let tempDate = cloneDate(this.value);
-                let candidate = this.intl.getDayJsValue(tempDate).set("hour", 0).set("minute", 0).set("second", 0).set("millisecond", 0);
-                this.kendoDate = this.getKendoDate(setTime(this.value, candidate.toDate()));
+               //  let tempDate = cloneDate(this.value);
+               //  let candidate = this.intl.getDayJsValue(tempDate).set("hour", 0).set("minute", 0).set("second", 0).set("millisecond", 0);
+               // // مقدار this.value==null باعث خطا می شود
+               //  //همچنین وضعیت تاریخ و زمان مقایسه شود
+               //  this.kendoDate = this.getKendoDate(setTime(this.value, candidate.toDate()));
+
+                const baseDate = intl.getDayJsValue(new Date(), 'fa')
+                    .hour(0)
+                    .minute(0)
+                    .second(0)
+                    .millisecond(0)
+                    .toDate();
+                this.kendoDate = this.getKendoDate(baseDate);
+                this.kendoDate.hour = false;
+                this.kendoDate.minute = false;
+                this.kendoDate.second = false;
             }
         }
     }
@@ -205,7 +228,7 @@ function setInputValue(localeId: string, oldValue: Date) {
             }
         } else {
             //this.kendoDate.value = newDate.toDate();
-            //this.renderer.setProperty(this.inputElement, 'value', newDate.format(format.toMomentDateTimeFormat()));
+            this.renderer.setProperty(this.inputElement, 'value', newDate.format(format.toMomentDateTimeFormat()));
         }
         return;
     }
@@ -405,6 +428,128 @@ function prepareDiffInJalaliMode(intl: JalaliCldrIntlService, diff: any[]) {
         }
     });
 }
+const existInputsTime = {
+    'h': false,
+    'm': false,
+    's': false
+};
+const inputBuffers = {
+    h: '',
+    m: '',
+    s: ''
+};
+function resetExistingTimeInputs() {
+    existInputsTime.h = false;
+    existInputsTime.m = false;
+    existInputsTime.s = false;
+    inputBuffers.h = '';
+    inputBuffers.m = '';
+    inputBuffers.s = '';
+}
+function prepareDiffInJalaliModeForTime(intl: JalaliCldrIntlService, diff: any[]) {
+    if (intl.localeIdByDatePickerType !== 'fa') return;
+
+    // اگر مقدار نامعتبر یا null است، یک تاریخ/زمان پایه بساز
+    if (!this.kendoDate.value || !dayjs(this.kendoDate.value).isValid()) {
+        const baseDate = intl.getDayJsValue(new Date(), 'fa')
+            .hour(0)
+            .minute(0)
+            .second(0)
+            .millisecond(0)
+            .toDate();
+        this.kendoDate = this.getKendoDate(baseDate);
+        this.kendoDate.hour = false;
+        this.kendoDate.minute = false;
+        this.kendoDate.second = false;
+        resetExistingTimeInputs();
+    }
+
+    if (!this.inputValue) return;
+
+    const dt = intl.getDayJsValue(this.kendoDate.value, 'fa');
+    if (!dt || !dt.isValid()) return;
+
+    diff.forEach((d): void => {
+        if (!d[0]) return;
+        d[2] = false;
+        const key = (d[0] as string).toLowerCase(); // 'h' | 'm' | 's'
+        // اگر کاربر حذف کرده (خالی) → ریست بخش
+        if (d[1] === '') {
+            // ریست بافر و مقدار بخش
+            inputBuffers[key] = '';
+            existInputsTime[key] = false;
+            // ست مقدار بخش به صفر در kendoDate
+            let newDt;
+            if (key === 'h') newDt = dt.hour(0);
+            else if (key === 'm') newDt = dt.minute(0);
+            else newDt = dt.second(0);
+            this.kendoDate = this.getKendoDate(newDt.toDate());
+            return;
+        }
+
+        // الحاق رشته‌ای: اگر قبلاً مقداری نوشتیم آن را الحاق می‌کنیم
+        const digitStr = '' + d[1];
+        const prevBuf = inputBuffers[key] || '';
+        const newBuf = prevBuf + digitStr;
+        // عددی‌شدن بافر
+        const parsed = parseInt(newBuf, 10);
+        let shouldSwitch = false;
+        let setValue = parsed;
+
+        if (key === 'h') {
+            // ساعت: دو رقمی یا بزرگتر از 23 => قطع و جابه‌جایی
+            if (newBuf.length >= 2 || parsed > 23) {
+                shouldSwitch = true;
+                // اگر parsed>23 بهتر است آن را به parsed % 24 تبدیل یا clamp کنیم.
+                setValue = parsed % 24;
+            } else {
+                // هنوز بخش کامل نشده، نباید switch کنیم
+                shouldSwitch = false;
+            }
+            // اعمال مقدار
+            const newDt = dt.set('hour', setValue);
+            this.kendoDate.value = newDt.toDate();
+            d[1] = '' + newDt.hour();
+        } else if (key === 'm') {
+            // دقیقه: دو رقمی یا بزرگتر از 59 => قطع و جابه‌جایی
+            if (newBuf.length >= 2 || parsed > 59) {
+                shouldSwitch = true;
+                setValue = parsed % 60;
+            } else {
+                shouldSwitch = false;
+            }
+            const newDt = dt.set('minute', setValue);
+            this.kendoDate.value = newDt.toDate();
+            d[1] = '' + newDt.minute();
+        } else if (key === 's') {
+            // ثانیه: همان منطق دقیقه
+            if (newBuf.length >= 2 || parsed > 59) {
+                shouldSwitch = true;
+                setValue = parsed % 60;
+            } else {
+                shouldSwitch = false;
+            }
+            const newDt = dt.set('second', setValue);
+            this.kendoDate.value = newDt.toDate();
+            d[1] = '' + newDt.second();
+        }
+
+        // ذخیره بافر و flag
+        inputBuffers[key] = newBuf;
+        existInputsTime[key] = true;
+
+        // وقتی بخش تکمیل شد، به Kendo بگوییم برود قسمت بعد
+        if (shouldSwitch) {
+            d[2] = true; // handleInput باید این را بخواند و switch را انجام دهد
+            // ریست بافر برای آن بخش تا تایپ بعدی از ابتدا باشد
+            inputBuffers[key] = '';
+            existInputsTime[key] = false;
+        } else {
+            d[2] = false;
+        }
+    });
+}
+
 
 export function getDateFormatString(format: string, localeId: string, value?: Date): string {
     const dt = this.intl.getDayJsValue(value || this.kendoDate.value, localeId)?.toDate();
